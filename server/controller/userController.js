@@ -18,3 +18,33 @@ export const createUser = async (req, res) => {
     res.status(500).json({ message: 'Error creating user', error: error.message });
   }
 };
+
+export const sendFriendRequest = async(req, res) => {
+    try{
+        const { senderId, receiverId } = req.body;
+
+        if(!senderId || !receiverId){
+            return res.status(400).json({error: "Please provide senderId and receiverId"});
+        }
+
+        const receiver = await User.findById(receiverId);
+
+        if(!receiver){
+            return res.status(404).json({error: "Receiver not found"});
+        }
+
+        const existingRequest = receiver.friendRequests.find((req) => req.userId.toString() === senderId); 
+
+        if(existingRequest){
+            return res.status(400).json({error: "Friend request already sent"});
+        }
+
+        receiver.friendRequests.push({userId: senderId, status: "pending"});
+        await receiver.save();
+
+        res.status(200).json({message: "Friend request sent successfully"});
+    }
+    catch(error){
+        res.status(500).json({error: error.message});
+    }
+}
