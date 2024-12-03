@@ -39,7 +39,7 @@ export const sendFriendRequest = async(req, res) => {
             return res.status(400).json({error: "Friend request already sent"});
         }
 
-        receiver.friendRequests.push({userId: senderId, status: "pending"});
+        receiver.friendRequests.push({userId: senderId, status: "Pending"});
         await receiver.save();
 
         res.status(200).json({message: "Friend request sent successfully"});
@@ -48,3 +48,55 @@ export const sendFriendRequest = async(req, res) => {
         res.status(500).json({error: error.message});
     }
 }
+
+export const getPendingFriendRequests = async (req, res) => {
+    try {
+      const { userId } = req.params;
+  
+      const user = await User.findById(userId).populate('friendRequests.userId', 'name email');
+  
+      if (!user) {
+        return res.status(404).json({ message: 'User not found.' });
+      }
+  
+      res.status(200).json({ friendRequests: user.friendRequests });
+    } catch (error) {
+      res.status(500).json({ message: 'Error fetching friend requests', error: error.message });
+    }
+  };
+
+  export const acceptFriendRequest = async (req, res) => {
+    try {
+      const { userId, requestId } = req.params;
+  
+      const user = await User.findByIdAndUpdate(userId, {
+        $pull: { friendRequests: { _id: requestId } },
+        $push: { friends: requestId },
+      });
+  
+      if (!user) {
+        return res.status(404).json({ message: 'User not found.' });
+      }
+  
+      res.status(200).json({ message: 'Friend request accepted successfully.' });
+    } catch (error) {
+      res.status(500).json({ message: 'Error accepting friend request', error: error.message });
+    }
+  };
+
+  export const getFriendsList = async (req, res) => {
+    try{
+        const { userId } = req.params;
+
+        const user = await User.findById(userId).populate('friends', 'name email');
+
+        if(!user){
+            return res.status(404).json({error: "User not found"});
+        }
+        res.status(200).json({ friends: user.friends });
+    }
+    catch(error){
+        res.status(500).json({error: error.message});
+    }
+  }
+  
